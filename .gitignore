@@ -1,0 +1,34 @@
+# === Python cache files ===
+__pycache__/
+*.py[cod]
+
+# === Virtual environments ===
+env/
+.venv/
+venv/
+
+# === Environment config ===
+.env
+.env.*
+!.env.example
+
+# === SQLite or test DBs ===
+*.db
+*.sqlite3
+
+# === Editor/IDE settings ===
+.vscode/
+.idea/
+.vs/
+
+# === Build artifacts ===
+build/
+dist/
+*.egg-info/
+
+# === Test artifacts ===
+.pytest_cache/
+
+# === OS files ===
+.DS_Store
+Thumbs.db
