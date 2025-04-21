@@ -1,5 +1,4 @@
-"""StrKeyDict always converts non-string keys to `str`
-
+"""StrKeyDict always converts non-string keys to `str` on insertion, update, and lookup
 Test for initializer: keys are converted to `str`.
 
     >>> d = StrKeyDict([(2, 'two'), ('4', 'four')])
