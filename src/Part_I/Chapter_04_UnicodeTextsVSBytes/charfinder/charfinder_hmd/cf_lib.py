@@ -19,15 +19,18 @@ Example:
 
 Author: HMDV
 """
+
 import unicodedata
 import difflib
 import json
 import os
 import sys
-from typing import Generator, Dict
+from typing import Generator, Dict, Optional
+from colorama import init, Fore, Style
+
+init(autoreset=True)
 
 CACHE_FILE = "unicode_name_cache.json"
-
 
 def normalize(text: str) -> str:
     """
@@ -35,15 +38,27 @@ def normalize(text: str) -> str:
     """
     return unicodedata.normalize('NFKD', text).upper()
 
-
-def build_name_cache() -> Dict[str, Dict[str, str]]:
+def build_name_cache(force_rebuild: bool = False, verbose: bool = True) -> Dict[str, Dict[str, str]]:
     """
     Build and return a cache dictionary of characters to original and normalized names.
-    Stores the result in a JSON file to avoid recomputation.
+    Optionally force cache regeneration even if the file exists.
+
+    Args:
+        force_rebuild (bool): Force rebuilding the cache even if file exists.
+        verbose (bool): If True, show info messages.
+
+    Returns:
+        dict: Mapping of characters to original and normalized names.
     """
-    if os.path.exists(CACHE_FILE):
+    if not force_rebuild and os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            cache = json.load(f)
+        if verbose:
+            print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} Loaded Unicode name cache from: {CACHE_FILE}")
+        return cache
+
+    if verbose:
+        print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} Rebuilding Unicode name cache. This may take a few seconds...")
 
     cache = {}
     for code in range(sys.maxunicode + 1):
@@ -55,42 +70,64 @@ def build_name_cache() -> Dict[str, Dict[str, str]]:
                 "normalized": normalize(name)
             }
 
-    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(cache, f, ensure_ascii=False)
+    try:
+        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cache, f, ensure_ascii=False)
+        if verbose:
+            print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} Cache written to: {CACHE_FILE}")
+    except Exception as e:
+        print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} Failed to write cache: {e}", file=sys.stderr)
 
     return cache
 
-
-NAME_CACHE = build_name_cache()
-
-
-def find_chars(query: str, fuzzy: bool = False, threshold: float = 0.7) -> Generator[str, None, None]:
+def find_chars(query: str, fuzzy: bool = False, threshold: float = 0.7,
+               name_cache: Optional[Dict[str, Dict[str, str]]] = None,
+               verbose: bool = True) -> Generator[str, None, None]:
     """
     Generate a list of Unicode characters matching a query.
-    Returns formatted string with codepoint, character, name, and escape code.
+
+    Args:
+        query (str): Search term.
+        fuzzy (bool): Enable fuzzy matching if no strict matches.
+        threshold (float): Similarity threshold for fuzzy match.
+        name_cache (dict): Optional preloaded cache.
+        verbose (bool): Show info messages.
+
+    Yields:
+        str: Formatted string with Unicode info.
     """
     if not isinstance(query, str):
         raise TypeError("Query must be a string.")
     if not query.strip():
         return
 
+    if name_cache is None:
+        name_cache = build_name_cache(verbose=verbose)
+
     norm_query = normalize(query)
     matches = []
 
-    for char, names in NAME_CACHE.items():
+    for char, names in name_cache.items():
         if norm_query in names['normalized']:
             matches.append((ord(char), char, names['original']))
 
     if not matches and fuzzy:
-        norm_names = {char: data['normalized'] for char, data in NAME_CACHE.items()}
+        if verbose:
+            print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} No exact match found for '{query}', trying fuzzy matching (threshold={threshold})...")
+        norm_names = {char: data['normalized'] for char, data in name_cache.items()}
         close = difflib.get_close_matches(norm_query, norm_names.values(), n=20, cutoff=threshold)
-        for char, data in NAME_CACHE.items():
+        for char, data in name_cache.items():
             if data['normalized'] in close:
                 matches.append((ord(char), char, data['original']))
 
-    for code, char, name in matches:
-        code_str = f"U+{code:04X}".ljust(10)
-        char_str = f"{char}".ljust(4)
-        name_str = f"{name}".ljust(50) + f"(\\u{code:04x})"
-        yield f"{code_str}  {char_str}  {name_str}"
+    if verbose:
+        if matches:
+            print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} Found {len(matches)} match(es) for query: '{query}'")
+        else:
+            print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} No matches found for query: '{query}'")
 
+    for code, char, name in matches:
+        code_str = f"U+{code:04X}"
+        char_str = char
+        name_str = f"{name}  (\\u{code:04x})"
+        yield f"{code_str}\t{char_str}\t{name_str}"
