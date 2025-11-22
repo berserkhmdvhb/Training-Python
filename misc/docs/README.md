@@ -25,3 +25,14 @@ pc() - t0
 Option A — dict[str, Any] (mutable payloads)
 
 Option B — Mapping[str, Any] (read-only / more general)
+
+model_dump() returns a dict[str, Any] (or similar) because Pydantic cannot guarantee the exact types of nested fields.
+Using Any everywhere is easy but hurts type safety and triggers linter/mypy warnings.
+Instead, narrow the type to what you actually expect: usually dict[str, object] or Mapping[str, object].
+
+Example:
+
+```python
+job_dict = cast(dict[str, object], job.model_dump())
+```
+
