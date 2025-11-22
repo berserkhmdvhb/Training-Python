@@ -20,3 +20,8 @@ t0 = pc();
 floats /= 3;
 pc() - t0
 ```
+
+
+Option A — dict[str, Any] (mutable payloads)
+
+Option B — Mapping[str, Any] (read-only / more general)
