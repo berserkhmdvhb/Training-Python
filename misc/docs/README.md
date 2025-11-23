@@ -38,3 +38,4 @@ job_dict = cast(dict[str, object], job.model_dump())
 
 
 If a model class is imported directly at the top-level of an API route file, and used it in route params, FastAPI treats as a Body (e.g., for POST), as long as there are no class dependencies in the route signatures pulling the model class into the Query path during inspection. This will avoid no forward‑ref trap.
+When ones switches to to injecting the model class (or other helpers) via Depends(...), FastAPI starts inspecting the callables involved and any nested annotations they reference. If any helper/dependency (including) annotates the class as (or causes FastAPI to infer it as) a Query(...) parameter, OpenAPI generation will try to build `Annotated[<class_name>, Query(...)]`, and with postponed annotations, that shows as a `ForwardRef('<class_name')` unless rebuilt.
