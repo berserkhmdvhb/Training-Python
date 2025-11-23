@@ -44,3 +44,10 @@ If dependency injection is necessary, a solution would be to force the class to 
 ```
 Annotated[<class_name, Body(...)],
 ```
+
+To detect the nature of a certain class, you can `ripgrep`:
+```
+rg "ScrapeCreate" -n src/agentic_scraper
+rg "Annotated\\[ScrapeCreate" -n src/agentic_scraper
+rg "Query\\(" -n src/agentic_scraper
+```
