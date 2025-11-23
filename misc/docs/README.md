@@ -36,3 +36,5 @@ Example:
 job_dict = cast(dict[str, object], job.model_dump())
 ```
 
+
+If a model class is imported directly at the top-level of an API route file, and used it in route params, FastAPI treats as a Body (e.g., for POST), as long as there are no class dependencies in the route signatures pulling the model class into the Query path during inspection. This will avoid no forward‑ref trap.
