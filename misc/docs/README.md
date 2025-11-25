@@ -88,4 +88,7 @@ def _enqueue_flush(self) -> None:
 ```
 
 
+Pydantic excludes private attributes (those starting with _) from model_dump() by default. So for example this command `dict(job.model_dump())` will ignores private attributes unless you explicitly include them.
+And all attributes that start with `_` are treated as private.
+
             
