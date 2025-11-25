@@ -118,6 +118,7 @@ with pytest.raises(ValueError, match=f"{prefix}.*"):
 ```
 
 
+Pydantic normalizes empty strings to None by default for optional fields unless you explicitly allow empty strings.
 
 
             
