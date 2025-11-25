@@ -51,3 +51,41 @@ rg "ScrapeCreate" -n src/agentic_scraper
 rg "Annotated\\[ScrapeCreate" -n src/agentic_scraper
 rg "Query\\(" -n src/agentic_scraper
 ```
+- Making persistence flush both sync and async friendlyN:
+
+```python
+def _enqueue_flush(self) -> None:
+    """Schedule a persistence flush asynchronously."""
+    # Start the worker if needed.
+    if self._flush_task is None or self._flush_task.done():
+        self._flush_task = asyncio.create_task(self._flush_loop())
+
+    # Signal that a flush is needed. (SIM105 + FBT003)
+    # - Use contextlib.suppress for QueueFull.
+    # - Use keyword 'item=True' to avoid boolean positional arg warning.
+    with suppress(asyncio.QueueFull):
+        self._flush_queue.put_nowait(item=True)
+```
+The following version, prevents the “no running event loop” crash anywhere a flush is triggered from sync code
+```python
+def _enqueue_flush(self) -> None:
+    """Schedule a persistence flush asynchronously, or sync if no event loop."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No event loop: sync persist, avoid creating tasks
+        try:
+            _persist_store_to_disk(self._store, self._file_path, MSG_ERROR_PERSIST)
+        except Exception:
+            logger.exception(MSG_ERROR_PERSIST)
+        return
+
+    if self._flush_task is None or self._flush_task.done():
+        self._flush_task = loop.create_task(self._flush_loop())
+
+    with suppress(asyncio.QueueFull):
+        self._flush_queue.put_nowait(item=True)
+```
+
+
+            
