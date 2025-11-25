@@ -96,4 +96,28 @@ If you want to have these private attributes accessible, reconstruct the model:
 ```
 record = <class_name>(**<attributes>)
 ```
+
+- Regex match for unit tests:
+```
+- E         Expected regex: '[API] [ROUTE] [JOB] Invalid job status: '
+  E         Actual message: '[API] [ROUTE] [JOB] Invalid job status: invalid'
+```
+
+before:
+```
+prefix = MSG_ERROR_INVALID_JOB_STATUS.split("{", 1)[0]
+with pytest.raises(ValueError, match=prefix):
+    helpers._coerce_status("invalid")
+```
+
+now:
+```
+prefix = MSG_ERROR_INVALID_JOB_STATUS.split("{", 1)[0]
+with pytest.raises(ValueError, match=f"{prefix}.*"):
+    helpers._coerce_status("invalid")
+```
+
+
+
+
             
