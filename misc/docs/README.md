@@ -89,6 +89,11 @@ def _enqueue_flush(self) -> None:
 
 
 Pydantic excludes private attributes (those starting with _) from model_dump() by default. So for example this command `dict(job.model_dump())` will ignores private attributes unless you explicitly include them.
-And all attributes that start with `_` are treated as private.
+And all attributes that start with `_` are treated as private, which implies these fields are intended for internal storage, not part of the public API payload.
 
+If you want to have these private attributes accessible, reconstruct the model:
+
+```
+record = <class_name>(**<attributes>)
+```
             
